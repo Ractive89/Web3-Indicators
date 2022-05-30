@@ -1,0 +1,335 @@
+// Author by Illupute https://twitter.com/illupute Free Analyse Tool
+//@version=5
+indicator(title="Victorinox by Illupute v1", overlay=true)
+
+avr = (high+low)/2
+var indicator_parameters_Base="基础设置"
+src = input(close, title="Source",inline = "l1", group = indicator_parameters_Base)
+BBI_Active = input.bool(true, title="显示BBI",inline = "l2", group = indicator_parameters_Base)
+EMA_Active = input.bool(true, title="显示EMA",inline = "l2", group = indicator_parameters_Base)
+Boolean_Active = input.bool(true, title="显示Boolean",inline = "l2", group = indicator_parameters_Base)
+SAR_Active = input.bool(true, title="显示SAR",inline = "l2", group = indicator_parameters_Base)
+BS_Active = input.bool(true, title="显示信号",inline = "l3", group = indicator_parameters_Base)
+ZigZag_Main_Active = input.bool(defval = true, title = "显示曲折",inline = "l3", group = indicator_parameters_Base)
+ZigZag_Fibo_Active = input.bool(defval = true, title = "显示斐波",inline = "l3", group = indicator_parameters_Base)
+Demark_Active = input.bool(defval = true, title = "显示Demark",inline = "l3", group = indicator_parameters_Base)
+WPR_Emotion_Active  = input.bool(defval = true, title = "显示WPR情绪线",inline = "l4", group = indicator_parameters_Base)
+Vegas_Active  = input.bool(defval = true, title = "显示Vegas通道",inline = "l4", group = indicator_parameters_Base)
+Keltner_Active  = input.bool(defval = true, title = "显示肯特纳通道",inline = "l4", group = indicator_parameters_Base)
+
+var indicator_parameters_BBI="BBI 设置"
+BBI_M1=input.int(3,minval=1,title="N1",inline = "l1", group = indicator_parameters_BBI)
+BBI_M2=input.int(6,minval=1,title="N2",inline = "l1", group = indicator_parameters_BBI)
+BBI_M3=input.int(12,minval=1,title="N3",inline = "l2", group = indicator_parameters_BBI)
+BBI_M4=input.int(24,minval=1,title="N4",inline = "l2", group = indicator_parameters_BBI)
+BBI_Color_Long  = input.color(color.green, "Long",inline = "l2", group = indicator_parameters_BBI)
+BBI_Color_Short  = input.color(color.orange, "Short",inline = "l2", group = indicator_parameters_BBI)
+
+// BBI ema remix ma -----
+M1 = ta.ema(src, BBI_M1)
+M2 = (ta.sma(src, BBI_M2)*1.5+ta.ema(src, BBI_M2)*0.5)/2
+M3 = (ta.sma(src, BBI_M3)*0.5+ta.ema(src, BBI_M3)*1.5)/2
+M4 = ta.sma(src, BBI_M4)
+
+BBI_fix = (M1+ M2 + M3 + M4) / 4
+plot(BBI_Active?BBI_fix:na,"BBI", color=(BBI_fix<=close?BBI_Color_Long:BBI_Color_Short), linewidth=3)
+
+var indicator_parameters_EMA="EMA 设置"
+EMA_L1=input.int(20,minval=1,title="L1",inline = "l1", group = indicator_parameters_EMA)
+EMA_L1_Active   = input.bool(true, "",   inline = "l1",group = indicator_parameters_EMA)
+EMA_L2=input.int(50,minval=1,title="L2",inline = "l1", group = indicator_parameters_EMA)
+EMA_L2_Active   = input.bool(true, "",   inline = "l1",group = indicator_parameters_EMA)
+EMA_L3=input.int(100,minval=1,title="L3",inline = "l2", group = indicator_parameters_EMA)
+EMA_L3_Active   = input.bool(true, "",   inline = "l2",group = indicator_parameters_EMA)
+EMA_L4=input.int(200,minval=1,title="L4",inline = "l2", group = indicator_parameters_EMA)
+EMA_L4_Active   = input.bool(true, "",   inline = "l2",group = indicator_parameters_EMA)
+
+EMA_L1_Color  = input.color(color.white, "L1",inline = "l3", group = indicator_parameters_EMA)
+EMA_L2_Color  = input.color(color.white, "L2",inline = "l3", group = indicator_parameters_EMA)
+EMA_L3_Color  = input.color(color.white, "L3",inline = "l3", group = indicator_parameters_EMA)
+EMA_L4_Color  = input.color(color.white, "L4",inline = "l3", group = indicator_parameters_EMA)
+
+
+// EMA 200 -----
+plot(EMA_Active?(EMA_L1_Active?ta.ema(src, EMA_L1):na):na, color=EMA_L1_Color, linewidth=1)
+plot(EMA_Active?(EMA_L2_Active?ta.ema(src, EMA_L2):na):na, color=EMA_L2_Color, linewidth=1)
+plot(EMA_Active?(EMA_L3_Active?ta.ema(src, EMA_L3):na):na, color=EMA_L3_Color, linewidth=2)
+plot(EMA_Active?(EMA_L4_Active?ta.ema(src, EMA_L4):na):na, color=EMA_L4_Color, linewidth=2)
+
+
+// Boolean with bias -----
+var indicator_parameters_Boolean="Boolean 设置"
+
+Boolean_Length = input.int(21,title="Length" ,minval=1,inline = "l2", group = indicator_parameters_Boolean)
+Boolean_Mult = input.float(2.0, title="StdDev", minval=0.001, maxval=50,inline = "l2", group = indicator_parameters_Boolean)
+Boolean_Offset = input.int(0, title="Offset", minval = -500, maxval = 500,inline = "l2", group = indicator_parameters_Boolean)
+
+Boolean_Background_Color  = input.color(color.rgb(33, 150, 243, 98), "背景",inline = "l3", group = indicator_parameters_Boolean)
+Boolean_Basis_Color  = input.color(color.rgb(41, 98, 255), "中轨",inline = "l3", group = indicator_parameters_Boolean)
+Boolean_U_Color  = input.color(color.rgb(41, 98, 255), "上轨",inline = "l3", group = indicator_parameters_Boolean)
+Boolean_L_Color  = input.color(color.rgb(41, 98, 255), "下轨",inline = "l3", group = indicator_parameters_Boolean)
+Boolean_Basis_Active   = input.bool(true, "Basis",   inline = "l4",group = indicator_parameters_Boolean)
+
+
+Boolean_Dev = Boolean_Mult * ta.stdev(src, Boolean_Length)
+Boolean_Basis = ta.sma(src,Boolean_Length)
+
+Boolean_U = Boolean_Basis + Boolean_Dev
+Boolean_L = Boolean_Basis - Boolean_Dev
+
+plot(Boolean_Active?(Boolean_Basis_Active?Boolean_Basis:na):na, "basis", color=Boolean_Basis_Color)
+Boolean_U_Plot = plot(Boolean_Active?Boolean_U:na, "Upper", color=Boolean_U_Color, offset = Boolean_Offset)
+Boolean_L_Plot = plot(Boolean_Active?Boolean_L:na, "Lower", color=Boolean_L_Color, offset = Boolean_Offset)
+fill(Boolean_U_Plot, Boolean_L_Plot, title = "Background", color=Boolean_Background_Color)
+
+// SAR -----
+var indicator_parameters_SAR="SAR 设置"
+SAR_Start = input.float(0.02, title="开始" ,inline = "l1", group = indicator_parameters_SAR)
+SAR_Increment = input.float(0.02, title="增量" ,inline = "l1", group = indicator_parameters_SAR)
+SAR_Maximum = input.float(0.2, title="最大" ,inline = "l1", group = indicator_parameters_SAR)
+
+SAR_U_Color  = input.color(color.red, "Up",inline = "l2", group = indicator_parameters_SAR)
+SAR_L_Color  = input.color(color.green, "Down",inline = "l2", group = indicator_parameters_SAR)
+
+SAR_Data = ta.sar(SAR_Start, SAR_Increment, SAR_Maximum)
+plot(SAR_Active?SAR_Data:na, "SAR", style=plot.style_cross, color=(SAR_Data>close?SAR_U_Color:SAR_L_Color),linewidth=2)
+
+// BBI Signal -----
+var indicator_parameters_BBISignal="基础设置"
+BS_Type = input.string("BB", title="交叉线", options = ["BB", "EMAL1", "EMAL2", "EMAL3", "EMAL4"],inline = "l1", group = indicator_parameters_BBISignal)
+
+bool BS_Buy = false
+bool BS_Sell = false
+
+BS_Buy := switch BS_Type
+    "BB" => ta.crossunder(Boolean_Basis, BBI_fix)
+    "EMAL1" => ta.crossunder(ta.ema(src, EMA_L1), BBI_fix)
+    "EMAL2" => ta.crossunder(ta.ema(src, EMA_L2), BBI_fix)
+    "EMAL3" => ta.crossunder(ta.ema(src, EMA_L3), BBI_fix)
+    "EMAL4" => ta.crossunder(ta.ema(src, EMA_L4), BBI_fix)
+
+BS_Sell := switch BS_Type
+    "BB" => ta.crossover(Boolean_Basis, BBI_fix)
+    "EMAL1" => ta.crossover(ta.ema(src, EMA_L1), BBI_fix)
+    "EMAL2" => ta.crossover(ta.ema(src, EMA_L2), BBI_fix)
+    "EMAL3" => ta.crossover(ta.ema(src, EMA_L3), BBI_fix)
+    "EMAL4" => ta.crossover(ta.ema(src, EMA_L4), BBI_fix)
+
+if BBI_fix>close 
+    BS_Buy := false
+if BBI_fix<close
+    BS_Sell := false
+
+plotshape(BS_Active?BS_Buy:na, "Long", shape.labelup, location.belowbar, color.lime, text="L", textcolor=color.black)
+plotshape(BS_Active?BS_Sell:na, "Short", shape.labeldown, location.abovebar, color.red, text="S", textcolor=color.white)
+
+// if buy==true
+//     strategy.entry("MA2CrossLE", strategy.long, comment="MA2CrossLE",stop = SAR_data,limit =math.abs(avr-SAR_data)*1.5+avr)
+// if sell==true
+//     strategy.entry("MA2CrossLE", strategy.short, comment="MA2CrossLE",stop = SAR_data,limit =avr-math.abs(close-SAR_data)*1.5)
+
+// ZigZag -----
+var indicator_parameters_ZigZag="Zig Zag设置"
+ZigZag_Period = input.int(defval = 15, title="周期", minval = 2, maxval = 50,inline = "l1", group = indicator_parameters_ZigZag)
+ZigZag_Label_Location = input.string(defval = "Left", title = "标签位置", options = ["Left", "Right"],inline = "l1", group = indicator_parameters_ZigZag)
+
+ZigZag_U_Color = input.color(defval = color.lime, title = "曲折颜色",inline = "l2", group = indicator_parameters_ZigZag)
+ZigZag_L_Color = input.color(defval = color.red, title = "",inline = "l2", group = indicator_parameters_ZigZag)
+
+
+ZigZag_Fibo_Label_Color = input.color(defval = color.blue, title = "斐波颜色",inline = "l2", group = indicator_parameters_ZigZag)
+ZigZag_Fibo_Line_Color = input.color(defval = color.lime, title = "",inline = "l2", group = indicator_parameters_ZigZag)
+
+ZigZag_236_Active = input.bool(defval = true, title = "236",inline = "l3", group = indicator_parameters_ZigZag)
+ZigZag_382_Active = input.bool(defval = true, title = "382",inline = "l3", group = indicator_parameters_ZigZag)
+ZigZag_500_Active = input.bool(defval = true, title = "500",inline = "l3", group = indicator_parameters_ZigZag)
+ZigZag_618_Active = input.bool(defval = true, title = "618",inline = "l3", group = indicator_parameters_ZigZag)
+ZigZag_786_Active = input.bool(defval = true, title = "786",inline = "l3", group = indicator_parameters_ZigZag)
+
+var ZigZag_Fibo_Ratios = array.new_float(0)
+var ZigZag_Shown_Levels = 1
+if barstate.isfirst
+    array.push(ZigZag_Fibo_Ratios, 0.000)
+    if ZigZag_236_Active
+        array.push(ZigZag_Fibo_Ratios, 0.236)
+        ZigZag_Shown_Levels := ZigZag_Shown_Levels + 1
+    if ZigZag_382_Active
+        array.push(ZigZag_Fibo_Ratios, 0.382)
+        ZigZag_Shown_Levels := ZigZag_Shown_Levels + 1
+    if ZigZag_500_Active
+        array.push(ZigZag_Fibo_Ratios, 0.500)
+        ZigZag_Shown_Levels := ZigZag_Shown_Levels + 1
+    if ZigZag_618_Active
+        array.push(ZigZag_Fibo_Ratios, 0.618)
+        ZigZag_Shown_Levels := ZigZag_Shown_Levels + 1
+    if ZigZag_786_Active
+        array.push(ZigZag_Fibo_Ratios, 0.786)
+        ZigZag_Shown_Levels := ZigZag_Shown_Levels + 1
+    for x = 1 to 5
+        array.push(ZigZag_Fibo_Ratios, x)
+        array.push(ZigZag_Fibo_Ratios, x + 0.272)
+        array.push(ZigZag_Fibo_Ratios, x + 0.414)
+        array.push(ZigZag_Fibo_Ratios, x + 0.618)
+
+float ZigZag_Period_High = ta.highestbars(high, ZigZag_Period) == 0 ? high : na
+float ZigZag_Period_Low = ta.lowestbars(low, ZigZag_Period) == 0 ? low : na
+var ZigZag_Direction = 0
+ZigZag_Direction := ZigZag_Period_High and na(ZigZag_Period_Low)?1:(ZigZag_Period_Low and na(ZigZag_Period_High)?-1:ZigZag_Direction)
+var ZigZag_Max_Array_Size = 10
+var ZigZag_Array = array.new_float(0)
+ZigZag_Array_Old = array.copy(ZigZag_Array)
+
+ZigZag_Add(value, bindex)=>
+    array.unshift(ZigZag_Array, bindex)
+    array.unshift(ZigZag_Array, value)
+    if array.size(ZigZag_Array) > ZigZag_Max_Array_Size
+        array.pop(ZigZag_Array)
+        array.pop(ZigZag_Array)
+    
+ZigZag_Update(value, bindex)=>
+    if array.size(ZigZag_Array) == 0
+        ZigZag_Add(value, bindex)
+    else
+        if (ZigZag_Direction == 1 and value > array.get(ZigZag_Array, 0)) or (ZigZag_Direction == -1 and value < array.get(ZigZag_Array, 0))
+            array.set(ZigZag_Array, 0, value)
+            array.set(ZigZag_Array, 1, bindex)
+        0.
+
+bool ZigZag_Direction_Changed = (ZigZag_Direction != ZigZag_Direction[1])
+if ZigZag_Period_High or ZigZag_Period_Low
+    if ZigZag_Direction_Changed
+        ZigZag_Add(ZigZag_Direction == 1 ? ZigZag_Period_High : ZigZag_Period_Low, bar_index)
+    else
+        ZigZag_Update(ZigZag_Direction == 1 ? ZigZag_Period_High : ZigZag_Period_Low, bar_index)
+
+if ZigZag_Main_Active and array.size(ZigZag_Array) >= 4 and array.size(ZigZag_Array_Old) >= 4
+    var line ZigZag_Line = na
+    if array.get(ZigZag_Array, 0) != array.get(ZigZag_Array_Old, 0) or array.get(ZigZag_Array, 1) != array.get(ZigZag_Array_Old, 1)
+        if array.get(ZigZag_Array, 2) == array.get(ZigZag_Array_Old, 2) and array.get(ZigZag_Array, 3) == math.round(array.get(ZigZag_Array_Old, 3))
+            line.delete(ZigZag_Line)
+        ZigZag_Line := line.new(x1 = math.round(array.get(ZigZag_Array, 1)), y1 = array.get(ZigZag_Array, 0), x2 = math.round(array.get(ZigZag_Array, 3)), y2 = array.get(ZigZag_Array, 2), color = ZigZag_Direction == 1 ? ZigZag_U_Color : ZigZag_L_Color, width = 2)
+
+var ZigZag_Fibo_Lines = array.new_line(0)
+var ZigZag_Fibo_Lables = array.new_label(0)
+if ZigZag_Fibo_Active and array.size(ZigZag_Array) >= 6 and barstate.islast
+    if array.size(ZigZag_Fibo_Lines) > 0
+        for x = 0 to array.size(ZigZag_Fibo_Lines) - 1
+            line.delete(array.get(ZigZag_Fibo_Lines, x))
+            label.delete(array.get(ZigZag_Fibo_Lables, x))
+            
+    ZigZag_Diff = array.get(ZigZag_Array, 4) - array.get(ZigZag_Array, 2)
+    ZigZag_Stopit = false
+    for x = 0 to array.size(ZigZag_Fibo_Ratios) - 1
+        if ZigZag_Stopit and x > ZigZag_Shown_Levels
+            break
+        array.unshift(ZigZag_Fibo_Lines, 
+                      line.new(x1 = math.round(array.get(ZigZag_Array, 5)), 
+                               y1 = array.get(ZigZag_Array, 2) + ZigZag_Diff * array.get(ZigZag_Fibo_Ratios, x), 
+                               x2 = bar_index, 
+                               y2 = array.get(ZigZag_Array, 2) + ZigZag_Diff * array.get(ZigZag_Fibo_Ratios, x), 
+                               color = ZigZag_Fibo_Line_Color,
+                               extend = extend.right))
+        label_x_loc = ZigZag_Label_Location == "Left" ? math.round(array.get(ZigZag_Array, 5)) - 1 : bar_index + 15
+        array.unshift(ZigZag_Fibo_Lables, 
+                      label.new( x = label_x_loc, 
+                                 y = array.get(ZigZag_Array, 2) + ZigZag_Diff * array.get(ZigZag_Fibo_Ratios, x), 
+                                 text = str.tostring(array.get(ZigZag_Fibo_Ratios, x), '#.###') + "(" + str.tostring(math.round_to_mintick(array.get(ZigZag_Array, 2) + ZigZag_Diff * array.get(ZigZag_Fibo_Ratios, x))) + ")", 
+                                 textcolor = ZigZag_Fibo_Label_Color, 
+                                 style = label.style_none))
+        if (ZigZag_Direction == 1 and array.get(ZigZag_Array, 2) + ZigZag_Diff * array.get(ZigZag_Fibo_Ratios, x) > array.get(ZigZag_Array, 0)) or
+           (ZigZag_Direction == -1 and array.get(ZigZag_Array, 2) + ZigZag_Diff * array.get(ZigZag_Fibo_Ratios, x) < array.get(ZigZag_Array, 0))
+            ZigZag_Stopit := true
+ 
+// Demark 9 -----
+
+TD=1
+TS=1
+TD := close > close[4] ?nz(TD[1])+1:0
+TS := close < close[4] ?nz(TS[1])+1:0
+TDUp = TD - ta.valuewhen(TD < TD[1], TD , 1 )
+TDDn = TS - ta.valuewhen(TS < TS[1], TS , 1 )
+plotshape(Demark_Active?(TDUp==9?true:na):na,style=shape.labeldown,color=color.green,location=location.abovebar,size=size.auto, text='9',textcolor =color.white)
+plotshape(Demark_Active?(TDDn==9?true:na):na,style=shape.labelup,color=color.red,location=location.belowbar,size=size.auto, text='9',textcolor =color.white)
+plotshape(Demark_Active?(TDUp==13?true:na):na,style=shape.labeldown,color=color.green,location=location.abovebar,size=size.auto, text='13',textcolor =color.white)
+plotshape(Demark_Active?(TDDn==13?true:na):na,style=shape.labelup,color=color.red,location=location.belowbar,size=size.auto, text='13',textcolor =color.white)
+
+// WPR Support Line -----
+var indicator_parameters_WPR_Support="WPR 情绪线 设置"
+WPR_Support_Length = input.int(title="Length", defval=21,inline = "l1", group = indicator_parameters_WPR_Support)
+WPR_Support_U_Color = input.color(defval = color.white, title = "WPR 上穿",inline = "l1", group = indicator_parameters_WPR_Support)
+WPR_Support_L_Color = input.color(defval = color.white, title = "WPR 下穿",inline = "l1", group = indicator_parameters_WPR_Support)
+
+WPR_Percent_R=-50.0
+_WPR(WPR_Support_Length) =>
+	max = ta.highest(WPR_Support_Length)
+	min = ta.lowest(WPR_Support_Length)
+	100 * (src - max) / (max - min)
+WPR_Percent_R := _WPR(WPR_Support_Length)
+
+var WPR_U_S=array.new<float>()
+var WPR_L_S=array.new<float>()
+var WPR_U_S_Lock=false
+var WPR_L_S_Lock=false
+
+if (WPR_Percent_R>=-20)
+    WPR_L_S_Lock:=false
+    if (array.size(WPR_U_S)>0 and WPR_U_S_Lock==false)
+        array.pop(WPR_U_S)
+    if (array.size(WPR_U_S)==0)
+        array.push(WPR_U_S,high)
+        WPR_U_S_Lock:=true
+    
+
+if (WPR_Percent_R<=-80)
+    WPR_U_S_Lock:=false
+    if (array.size(WPR_L_S)>0 and WPR_L_S_Lock==false)
+        array.pop(WPR_L_S)
+    if (array.size(WPR_L_S)==0)
+        array.push(WPR_L_S,low)
+        WPR_L_S_Lock:=true
+        
+plot(WPR_Emotion_Active?((array.size(WPR_U_S)>0)?array.get(WPR_U_S,0):na):na,style=plot.style_circles,color = WPR_Support_U_Color)
+plot(WPR_Emotion_Active?((array.size(WPR_L_S)>0)?array.get(WPR_L_S,0):na):na,style=plot.style_circles,color = WPR_Support_L_Color)
+
+// Vegas Tunnel -----
+var indicator_parameters_Vegas="Boolean 设置"
+
+Vegas_F_Color  = input.color(color.orange, "12均线",inline = "l1", group = indicator_parameters_Vegas)
+Vegas_L1_Color  = input.color(color.red, "144-169通道",inline = "l1", group = indicator_parameters_Vegas)
+Vegas_L2_Color  = input.color(color.blue, "288-338通道",inline = "l1", group = indicator_parameters_Vegas)
+
+plot(Vegas_Active?ta.ema(src, 12):na, color=Vegas_F_Color, linewidth=1)
+plot(Vegas_Active?ta.ema(src, 144):na, color=Vegas_L1_Color, linewidth=2)
+plot(Vegas_Active?ta.ema(src, 169):na, color=Vegas_L1_Color, linewidth=3)
+plot(Vegas_Active?ta.ema(src, 288):na, color=Vegas_L2_Color, linewidth=2)
+plot(Vegas_Active?ta.ema(src, 338):na, color=Vegas_L2_Color, linewidth=2)
+
+// Keltner Channels -----
+var indicator_parameters_Keltner="肯特纳通道 设置"
+
+Keltner_Length = input.int(20,title="Length" ,minval=1,inline = "l1", group = indicator_parameters_Keltner)
+Keltner_Mult = input.float(2.0, title="Multiplier", minval=0.001, maxval=50,inline = "l1", group = indicator_parameters_Keltner)
+Keltner_Exp = input(true, "Use Exponential MA", inline = "l1",group = indicator_parameters_Keltner)
+Keltner_BandsStyle = input.string("Average True Range", options = ["Average True Range", "True Range", "Range"],inline = "l2", title="Bands Style", group = indicator_parameters_Keltner)
+Keltner_Atrlength = input(10, "ATR Length",inline = "l2", group = indicator_parameters_Keltner)
+
+Keltner_Background_Color  = input.color(color.rgb(33, 150, 243, 95), "背景",inline = "l3", group = indicator_parameters_Keltner)
+Keltner_MA_Color  = input.color(color.rgb(41, 98, 255), "中轨",inline = "l3", group = indicator_parameters_Keltner)
+Keltner_U_Color  = input.color(color.rgb(41, 98, 255), "上轨",inline = "l3", group = indicator_parameters_Keltner)
+Keltner_L_Color  = input.color(color.rgb(41, 98, 255), "下轨",inline = "l3", group = indicator_parameters_Keltner)
+Keltner_Basis_Active   = input.bool(true, "Basis",   inline = "l4",group = indicator_parameters_Keltner)
+
+Keltner_Esma(source, length)=>
+	s = ta.sma(source, length)
+	e = ta.ema(source, length)
+	Keltner_Exp ? e : s
+Keltner_MA = Keltner_Esma(src, Keltner_Length)
+
+Keltner_RangeMA = Keltner_BandsStyle == "True Range" ? ta.tr(true) : Keltner_BandsStyle == "Average True Range" ? ta.atr(Keltner_Atrlength) : ta.rma(high - low, Keltner_Length)
+Keltner_U = Keltner_MA + Keltner_RangeMA * Keltner_Mult
+Keltner_L = Keltner_MA - Keltner_RangeMA * Keltner_Mult
+
+Keltner_U_Plot = plot(Keltner_Active?Keltner_U:na, color=Keltner_U_Color, title="Upper")
+plot(Keltner_Active?(Keltner_Basis_Active?Keltner_MA:na):na, color=Keltner_MA_Color, title="Basis")
+Keltner_L_Plot = plot(Keltner_Active?Keltner_L:na, color=Keltner_L_Color, title="Lower")
+fill(Keltner_U_Plot, Keltner_L_Plot, color=Keltner_Background_Color, title="Background")
