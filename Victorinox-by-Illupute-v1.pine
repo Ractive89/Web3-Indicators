@@ -292,7 +292,7 @@ plot(WPR_Emotion_Active?((array.size(WPR_U_S)>0)?array.get(WPR_U_S,0):na):na,sty
 plot(WPR_Emotion_Active?((array.size(WPR_L_S)>0)?array.get(WPR_L_S,0):na):na,style=plot.style_circles,color = WPR_Support_L_Color)
 
 // Vegas Tunnel -----
-var indicator_parameters_Vegas="Boolean 设置"
+var indicator_parameters_Vegas="Vegas 设置"
 
 Vegas_F_Color  = input.color(color.orange, "12均线",inline = "l1", group = indicator_parameters_Vegas)
 Vegas_L1_Color  = input.color(color.red, "144-169通道",inline = "l1", group = indicator_parameters_Vegas)
